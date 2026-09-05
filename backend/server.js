@@ -19,7 +19,33 @@ app.use(cors({
 }));
 app.use(express.json({ limit: "20mb" }));
 
+// Serverless DB connection caching
+let cachedDbPromise = null;
+const connectToDatabase = async () => {
+    if (mongoose.connection.readyState === 1) return mongoose.connection;
+    if (!cachedDbPromise) {
+        cachedDbPromise = mongoose.connect(process.env.MONGODB_URI, {
+            serverSelectionTimeoutMS: 15000
+        }).catch(err => {
+            cachedDbPromise = null;
+            throw err;
+        });
+    }
+    return cachedDbPromise;
+};
+
+app.use(async (req, res, next) => {
+    if (req.path === "/") return next();
+    try {
+        await connectToDatabase();
+    } catch (err) {
+        console.error("DB connection error:", err.message);
+    }
+    next();
+});
+
 /* Routes */
+
 app.use("/api/audit", auditRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/payments", paymentRoutes);
@@ -35,22 +61,15 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`🚀 ShopSense AI backend running on port ${PORT}`);
-});
+if (!process.env.VERCEL) {
+    connectToDatabase()
+        .then(() => console.log("✅ MongoDB connected successfully!"))
+        .catch(err => console.error("⚠️ MongoDB connection warning:", err.message));
 
-// Connect to MongoDB with 15s timeout
-const mongoUri = process.env.MONGODB_URI;
-if (mongoUri) {
-    mongoose.connect(mongoUri, {
-        serverSelectionTimeoutMS: 15000
-    })
-    .then(() => {
-        console.log("✅ MongoDB connected successfully!");
-    })
-    .catch((error) => {
-        console.error("⚠️ MongoDB connection warning:", error.message);
-        console.log("Retrying MongoDB connection...");
+    app.listen(PORT, () => {
+        console.log(`🚀 ShopSense AI backend running on port ${PORT}`);
     });
 }
+
+module.exports = app;
 
