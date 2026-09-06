@@ -348,7 +348,7 @@ Instructions:
 `;
 
             const geminiRes = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-3.6-flash",
                 contents: geminiPrompt
             });
 

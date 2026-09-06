@@ -369,7 +369,7 @@ Merchant Question:
 Provide a concise, professional, bulleted answer.
 `;
             const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-3.6-flash",
                 contents: prompt
             });
             return response.text;
@@ -508,7 +508,7 @@ Return a valid JSON object matching this exact structure:
 }
 `;
             const result = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-3.6-flash",
                 contents: prompt
             });
 
